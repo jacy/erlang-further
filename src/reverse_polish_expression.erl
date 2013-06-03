@@ -16,8 +16,11 @@ c(Express) ->
 
 rc([],[]) -> 0;
 rc([Acc | []],[]) -> Acc;
-rc([S_Head | S_Tail],[E_Head | E_Tail]) when (E_Head == "+" or  E_Head == "-" or E_Head =:= "*" or E_Head =:= "/") -> rc([(S_Head + E_Head)| S_Tail], E_Tail);
-rc(Stack = [S_Head | S_Tail],[E_Head | E_Tail], Acc) -> rc().
+rc([S_Head | [S_Head_2 | S_Tail]],["+" | E_Tail]) -> rc([(S_Head + S_Head_2) | S_Tail], E_Tail);
+rc([S_Head | [S_Head_2 | S_Tail]],["-" | E_Tail]) -> rc([(S_Head - S_Head_2) | S_Tail], E_Tail);
+rc([S_Head | [S_Head_2 | S_Tail]],["*" | E_Tail]) -> rc([(S_Head * S_Head_2) | S_Tail], E_Tail);
+rc([S_Head | [S_Head_2 | S_Tail]],["/" | E_Tail]) -> rc([(S_Head / S_Head_2) | S_Tail], E_Tail);
+rc(Stack,[E_Head | E_Tail]) -> rc([E_Head | Stack], E_Tail).
 
 
 
