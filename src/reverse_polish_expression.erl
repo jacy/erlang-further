@@ -8,24 +8,34 @@
 %% API functions
 %% ====================================================================
 -compile(export_all).
+-import(myio,[p/1]).
 
 c(Express) ->
 	Tokens = string:tokens(Express, " "),
-	
-'Ending...'.
+	%rc([7,"10"],"2 * -").
+	rc([],Tokens).
 
-rc([],[]) -> 0;
-rc([Acc | []],[]) -> Acc;
-rc([S_Head | [S_Head_2 | S_Tail]],["+" | E_Tail]) -> rc([(S_Head + S_Head_2) | S_Tail], E_Tail);
-rc([S_Head | [S_Head_2 | S_Tail]],["-" | E_Tail]) -> rc([(S_Head - S_Head_2) | S_Tail], E_Tail);
-rc([S_Head | [S_Head_2 | S_Tail]],["*" | E_Tail]) -> rc([(S_Head * S_Head_2) | S_Tail], E_Tail);
-rc([S_Head | [S_Head_2 | S_Tail]],["/" | E_Tail]) -> rc([(S_Head / S_Head_2) | S_Tail], E_Tail);
-rc(Stack,[E_Head | E_Tail]) -> rc([E_Head | Stack], E_Tail).
+demo() -> p(rc([],[10,4,3,"+",2,"+","+"])).
+
+rc([Acc], []) -> Acc;
+rc([H1,H2 | S],["+" | T]) -> rc([(H1 + H2) | S], T);
+rc([H1,H2 | S],["-" | T]) -> rc([(H1 - H2) | S], T);
+rc([H1,H2 | S],["*" | T]) -> rc([(H1 * H2) | S], T);
+rc([H1,H2 | S],["/" | T]) -> rc([(H1 / H2) | S], T);
+rc(S,[H | T]) -> rc([H | S], T).
 
 
-
+read(N) ->
+    case string:to_float(N) of
+        {error,no_float} -> list_to_integer(N);
+        {F,_} -> F
+    end.
 %% ====================================================================
 %% Internal functions
 %% ====================================================================
-
+rpn("+", [N1,N2|S]) -> [N2+N1|S];
+rpn(X, Stack) -> [read(X)|Stack].
+rpn(L) when is_list(L) ->
+    [Res] = lists:foldl(fun rpn/2, [], string:tokens(L, " ")),
+    Res.
 
