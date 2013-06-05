@@ -23,8 +23,8 @@ shift_state() ->
 	Pid ! {From, {take, pomegranate}},
 	Pid ! terminate.
 
-%% Something annoying with the previous example is that the programmer who’s going to use the fridge must 
-%% know about the protocol that has been invented for that process. That’s a useless burden. A good way to
+%% Something annoying with the previous example is that the programmer whoâs going to use the fridge must 
+%% know about the protocol that has been invented for that process. Thatâs a useless burden. A good way to
 %% solve this is to abstract messages away with the help of functions dealing with receiving and sending them:
 hide_msg() -> 
 	Pid = spawn(?MODULE, fridge, [[]]),
@@ -58,16 +58,40 @@ sleep(T) ->
     	after T -> ok
     end.
 
-%% Another special case is when the timeout is at 0:
-%% When that happens, the Erlang VM will try to find a message that fits one of the available patterns. 
-%% In the preceding case, anything matches. As long as there are messages, the flush/0 function will recursively 
-%% call itself until the mailbox is empty. After that, the after 0 -> ok part of the code is executed, 
-%% and the function returns.
+%% Another special case is when the timeout is at 0 : If there is no matching message in the mailbox, 
+%% the timeout will occur immediately.
+%% Test it from shell
+%% self() ! one.
+%% self() ! two.
+%% concurrent:flush().
 flush() ->
     receive
-        _ -> flush()
+        Msg -> p(Msg),flush()
     after 0 -> ok 
 	end.
+%% ====================================================================
+%% Selective Receives
+%% ====================================================================
+important() ->
+	receive
+	     {Priority, Message} when Priority > 10 -> [Message | important()]
+	after 0 ->
+	     normal()
+	end.
+
+normal() ->
+	receive
+		{_, Message} -> [Message | normal()]
+	after 0 -> []
+	end.
+
+%% Handle priority above 10 first:
+selective_receives() ->
+	self() ! {15, high_15}, 
+	self() ! {7, low_7}, 
+	self() ! {1, low_1}, 
+	self() ! {17, high_17},
+	important().
 %% ====================================================================
 %% Internal functions
 %% ====================================================================
@@ -83,3 +107,19 @@ fridge(List) ->
 			end;
 		 terminate -> ok
 	end.
+
+%%% When messages are sent to a process, they’re stored in the mailbox until the process reads them and they match a pattern there, 
+%%% even if the process that originally sent them has died since then. The messages are stored in the order they were received. 
+%%% This means every time you enter a receive to match a message, the mailbox is scanned, beginning with the first (and old- est) message received.
+
+%%% That oldest message is then tried against every pattern of the receive until one of them matches. When it does, the message 
+%%% is removed from the mailbox, and the code for the process executes normally until the next receive. When this next receive is executed, 
+%%% the VM will look for the oldest message currently in the mailbox (the one after the one you removed), and so on.
+
+%%% When there is no way to match a given message, it is put in a save queue, and the next message is tried. 
+%%% If the second message matches, the first mes- sage is put back on top of the mailbox to be retried later.
+
+%%% imagine we want the 367th message, but the first 366 messages are junk ignored by our code. To get the 367th message, 
+%%% the process needs to try to match those 366 junk messages. Once it has done that, and the messages have all been put in the queue, 
+%%% the 367th message is taken out, and the first 366 are put back on top of the mailbox. The next useful message could be burrowed much 
+%%% deeper and take even longer to be found.This kind of receive is a frequent cause of performance problems in Erlang. 
