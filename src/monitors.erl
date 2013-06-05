@@ -26,8 +26,8 @@ monitor_demo() ->
 %% Also note that as with links, there is an atomic function to spawn a process while monitoring it: spawn_monitor/1-3.
 another_monitor() ->
 	{Pid, _} = spawn_monitor(fun() -> receive _ -> exit(boom) end end),
-	receive_msg(),
-	Pid ! die.
+	Pid ! die,
+	receive_msg().
 
 unmonitor() ->
 	{Pid, Ref} = spawn_monitor(fun() -> receive _ -> exit(boom) end end),
