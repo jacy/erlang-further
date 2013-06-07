@@ -42,6 +42,7 @@ naming_process() ->
 	spawn(?MODULE, restarter,[]),
 	judge("Genesis", "The Lambda Lies Down on Broadway"),
 	exit(whereis(critic), solar_storm),
+	timer:sleep(5000), % wait for the crash process to restart
 	judge("Rage Against the Turing Machine", "Unit Testify").
 	
 restarter() ->
@@ -53,14 +54,13 @@ restarter() ->
             ok;
         {'EXIT', Pid, shutdown} -> % manual termination, not a crash
             ok;
- 		{'EXIT', Pid, _} -> p("1111"),restarter()
+ 		{'EXIT', Pid, _} -> p("Restarting..."),restarter()
 	end.
 
 %% process name can be access in different processes, this will lead shared condition problem
 %% so we can identify message by reference
 judge(Band, Album) ->
     Ref = make_ref(), % Use references (created with make_ref()) as unique values to identify messages 
-	p(whereis(critic)),
     critic ! {self(), Ref, {Band, Album}}, % make sure we receive the correct messages from the right process
     receive
         {Ref, Criticism} -> Criticism
